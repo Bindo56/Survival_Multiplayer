@@ -1,0 +1,62 @@
+# =====================================
+# Unreal Engine Generated
+# =====================================
+
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# Plugin generated files
+Plugins/*/Binaries/
+Plugins/*/Intermediate/
+Plugins/*/DerivedDataCache/
+
+# =====================================
+# IDE / Editors
+# =====================================
+
+.vs/
+.vscode/
+.idea/
+
+*.VC.db
+*.VC.opendb
+*.suo
+*.user
+*.userprefs
+
+# =====================================
+# Compiled / Temp
+# =====================================
+
+*.dll
+*.exe
+*.app
+*.pdb
+*.obj
+*.lib
+*.so
+*.dylib
+*.ipa
+*.apk
+
+*.log
+*.tmp
+*.temp
+*.cache
+
+# =====================================
+# OS junk
+# =====================================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =====================================
+# Rider for Unreal
+# =====================================
+
+RiderLink/
