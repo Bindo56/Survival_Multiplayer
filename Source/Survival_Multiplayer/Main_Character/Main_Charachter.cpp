@@ -6,8 +6,12 @@
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Components/WidgetComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-
+#include "Net/UnrealNetwork.h"
+#include "Survival_Multiplayer/HUD/OverheadWidget.h"
+#include "Survival_Multiplayer/Weapon/Weapon.h"
 
 
 // Sets default values
@@ -23,6 +27,12 @@ AMain_Character::AMain_Character()
 	FollowCamera -> SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera -> bUsePawnControlRotation = false;
 
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement() -> bOrientRotationToMovement = true;
+
+	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
+	OverheadWidget -> SetupAttachment(RootComponent);
+	
 }
 
 
@@ -36,6 +46,11 @@ void AMain_Character::BeginPlay()
 void AMain_Character::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	/*if (OverlappingWeapon)
+	{
+		OverlappingWeapon->ShowPickupWidget(true);
+	}*/
 
 }
 
@@ -57,6 +72,12 @@ void AMain_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		Input-> BindAction(LookAction,ETriggerEvent::Triggered,this,&AMain_Character::Look);
 		Input-> BindAction(JumpAction,ETriggerEvent::Triggered,this,&AMain_Character::Jump);
 	}
+}
+
+void AMain_Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME_CONDITION(AMain_Character,OverlappingWeapon,COND_OwnerOnly);
 }
 
 void AMain_Character::Move(const FInputActionValue& InputValue)
@@ -94,6 +115,34 @@ void AMain_Character::Look(const FInputActionValue& InputValue)
 void AMain_Character::Jump()
 {
 	ACharacter::Jump();
+}
+
+void AMain_Character::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
+{
+	if (OverlappingWeapon)
+	{
+		OverlappingWeapon->ShowPickupWidget(true);
+	}
+	if (LastWeapon)
+	{
+		LastWeapon->ShowPickupWidget(false);
+	}
+}
+
+void AMain_Character::SetOverLappingWeapon(AWeapon* Weapon)
+{
+	if (OverlappingWeapon)
+	{
+		OverlappingWeapon->ShowPickupWidget(false);
+	}
+	OverlappingWeapon = Weapon;
+	if (IsLocallyControlled())
+	{
+		if (OverlappingWeapon)
+		{
+			OverlappingWeapon->ShowPickupWidget(true);
+		}
+	}
 }
 
 
