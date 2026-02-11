@@ -17,6 +17,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void PostInitializeComponents() override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -31,10 +32,20 @@ protected:
 	class UInputAction* JumpAction;
 	UPROPERTY(EditAnywhere, Category = "EnhancedInput")
 	class UInputAction* LookAction;
+	UPROPERTY(EditAnywhere, Category = "EnhancedInput")
+	class UInputAction* InteractAction;
+	UPROPERTY(EditAnywhere, Category = "EnhancedInput")
+	class UInputAction* CrouchingAction;
+	UPROPERTY(EditAnywhere, Category = "EnhancedInput")
+	class UInputAction* AimAction;
 
 	void Move(const FInputActionValue& InputValue);
 	void Look(const FInputActionValue& InputValue);
 	void Jump();
+	void Interact();
+	void CrouchButtonPressed();
+	void AimButtonPressed();
+	void AimButtonReleased();
 	
 
 private:
@@ -54,9 +65,17 @@ private:
 	class AWeapon* OverlappingWeapon;
 
 	UFUNCTION()
-	void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
+	void OnRep_OverlappingWeapon(AWeapon* LastWeapon) const;
+
+	 UPROPERTY(VisibleAnywhere)
+	class UCombatComponent* Combat;
+
+	UFUNCTION(Server,Reliable)  //for RPC Call
+	void ServerEquipButtonPressed();
 public:
 	//getter and setter
 	 void SetOverLappingWeapon(AWeapon* Weapon);
+	 bool IsWeaponEquipped();
+	bool IsAiming();
 	
 };

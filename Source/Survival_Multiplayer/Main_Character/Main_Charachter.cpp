@@ -10,6 +10,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Survival_Multiplayer/CharacterComponent/CombatComponent.h"
 #include "Survival_Multiplayer/HUD/OverheadWidget.h"
 #include "Survival_Multiplayer/Weapon/Weapon.h"
 
@@ -32,7 +33,11 @@ AMain_Character::AMain_Character()
 
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget -> SetupAttachment(RootComponent);
-	
+
+	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
+	Combat->SetIsReplicated(true);
+
+	GetCharacterMovement() -> NavAgentProps.bCanCrouch = true;
 }
 
 
@@ -71,6 +76,10 @@ void AMain_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		Input-> BindAction(MoveAction,ETriggerEvent::Triggered,this,&AMain_Character::Move);
 		Input-> BindAction(LookAction,ETriggerEvent::Triggered,this,&AMain_Character::Look);
 		Input-> BindAction(JumpAction,ETriggerEvent::Triggered,this,&AMain_Character::Jump);
+		Input-> BindAction(InteractAction,ETriggerEvent::Triggered,this,&AMain_Character::Interact);
+		Input-> BindAction(CrouchingAction,ETriggerEvent::Triggered,this,&AMain_Character::CrouchButtonPressed);
+		Input-> BindAction(AimAction,ETriggerEvent::Started,this,&AMain_Character::AimButtonPressed);
+		Input-> BindAction(AimAction,ETriggerEvent::Completed,this,&AMain_Character::AimButtonReleased);
 	}
 }
 
@@ -78,6 +87,15 @@ void AMain_Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME_CONDITION(AMain_Character,OverlappingWeapon,COND_OwnerOnly);
+}
+
+void AMain_Character::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	if (Combat)
+	{
+		Combat->Character = this;
+	}
 }
 
 void AMain_Character::Move(const FInputActionValue& InputValue)
@@ -117,7 +135,60 @@ void AMain_Character::Jump()
 	ACharacter::Jump();
 }
 
-void AMain_Character::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
+void AMain_Character::Interact() //server pickup who's owns the server or created
+{
+	if (Combat)
+	{
+		if (HasAuthority())
+		{
+		     Combat->EquipWepon(OverlappingWeapon);
+		}
+		else
+		{
+			ServerEquipButtonPressed();
+		}
+	}
+}
+
+void AMain_Character::CrouchButtonPressed()
+{
+	if (bIsCrouched)
+	{
+	   UnCrouch();	
+	}
+	else
+	{
+	  Crouch();
+	}
+}
+
+void AMain_Character::AimButtonPressed()
+{
+	if (Combat)
+	{
+		Combat -> SetAiming(true);
+	}
+}
+
+void AMain_Character::AimButtonReleased()
+{
+	if (Combat)
+	{
+		Combat -> SetAiming(false);
+	}
+}
+
+
+void AMain_Character::ServerEquipButtonPressed_Implementation()  //server RPC for Client pickup Gun
+{
+	if (Combat)
+	{
+		Combat->EquipWepon(OverlappingWeapon);
+	}
+	
+}
+
+void AMain_Character::OnRep_OverlappingWeapon(AWeapon* LastWeapon) const
 {
 	if (OverlappingWeapon)
 	{
@@ -128,6 +199,8 @@ void AMain_Character::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 		LastWeapon->ShowPickupWidget(false);
 	}
 }
+
+
 
 void AMain_Character::SetOverLappingWeapon(AWeapon* Weapon)
 {
@@ -143,6 +216,16 @@ void AMain_Character::SetOverLappingWeapon(AWeapon* Weapon)
 			OverlappingWeapon->ShowPickupWidget(true);
 		}
 	}
+}
+
+bool AMain_Character::IsWeaponEquipped()
+{
+	return (Combat && Combat->EquippedWeapon);
+}
+
+bool AMain_Character::IsAiming()
+{
+	return (Combat &&  Combat->bAiming);
 }
 
 
