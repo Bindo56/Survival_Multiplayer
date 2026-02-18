@@ -7,6 +7,7 @@
 #include "Survival_Multiplayer/Main_Character/Main_Charachter.h"
 #include "Net/UnrealNetwork.h"
 #include "Components/SphereComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Survival_Multiplayer/Weapon/Weapon.h"
 
 // Sets default values for this component's properties
@@ -15,6 +16,8 @@ UCombatComponent::UCombatComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 
 	// ...
+	BaseWalkSpeed = 600.f;
+	AimWalkSpeed = 450.f;
 }
 
 
@@ -23,6 +26,11 @@ void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (Character)
+	{
+		Character-> GetCharacterMovement() -> MaxWalkSpeed = BaseWalkSpeed;
+	}
+	
 	// ...
 }
 
@@ -30,14 +38,31 @@ void UCombatComponent::SetAiming(bool bISAiming)
 {
 	bAiming = bISAiming;
 	ServerSetAiming(bISAiming);
+	if (Character)
+	{
+		Character -> GetCharacterMovement()-> MaxWalkSpeed = bISAiming ? AimWalkSpeed : BaseWalkSpeed;
+	}
 	
 }
 
 void UCombatComponent::ServerSetAiming_Implementation(bool bISAiming)
 {
 	bAiming = bISAiming;
+
+	if (Character)
+	{
+		Character -> GetCharacterMovement()-> MaxWalkSpeed = bISAiming ? AimWalkSpeed : BaseWalkSpeed;
+	}
 }
 
+void UCombatComponent::OnRep_EquippedWeapon()
+{
+	 if (EquippedWeapon && Character)
+	 {
+	 	Character -> GetCharacterMovement() -> bOrientRotationToMovement = false;
+	 	Character -> bUseControllerRotationYaw = true;
+	 }
+}
 
 // Called every frame
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
@@ -71,4 +96,8 @@ void UCombatComponent::EquipWepon(class AWeapon* WeaponToEquip)
 		HandSocket->AttachActor(EquippedWeapon,Character->GetMesh());
 	}
 	EquippedWeapon-> SetOwner(Character);
+
+	Character -> GetCharacterMovement() -> bOrientRotationToMovement = false;
+	Character -> bUseControllerRotationYaw = true;
+	
 }

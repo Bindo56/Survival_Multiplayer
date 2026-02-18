@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "CharacterType.h"
 #include "Main_Charachter.generated.h"
 
 UCLASS()
@@ -46,6 +47,7 @@ protected:
 	void CrouchButtonPressed();
 	void AimButtonPressed();
 	void AimButtonReleased();
+	void AimOffSet(float DeltaTime);
 	
 
 private:
@@ -72,10 +74,23 @@ private:
 
 	UFUNCTION(Server,Reliable)  //for RPC Call
 	void ServerEquipButtonPressed();
+
+	float AO_Yaw;
+	float InterpAO_Yaw;
+	float AO_Pitch;
+	FRotator StartingAimRotation;
+
+	ETurningInPlace TurningInPlace;
+	void TurnInPlace(float DeltaTime);
 public:
 	//getter and setter
 	 void SetOverLappingWeapon(AWeapon* Weapon);
 	 bool IsWeaponEquipped();
-	bool IsAiming();
+	 bool IsAiming();
+	 FORCEINLINE float GEtAO_Yaw() const {return  AO_Yaw;}
+	 FORCEINLINE float GetAO_Pitch() const {return AO_Pitch;}
+	AWeapon* GetEquippedWeapon();
+
+	FORCEINLINE ETurningInPlace GetTurningInPlace() const {return  TurningInPlace;}
 	
 };

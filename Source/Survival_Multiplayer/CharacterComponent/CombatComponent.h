@@ -27,13 +27,23 @@ protected:
 	UFUNCTION(Server , Reliable)
 	void ServerSetAiming(bool bISAiming);
 
+	UFUNCTION()
+	void OnRep_EquippedWeapon(); 
+
 private:
 	class AMain_Character* Character;
-	UPROPERTY(Replicated)
+	
+	UPROPERTY(Replicatedusing = OnRep_EquippedWeapon)
 	class AWeapon* EquippedWeapon;
 	
 	UPROPERTY(Replicated)
 	bool bAiming;
+
+	UPROPERTY(EditAnywhere)
+	float BaseWalkSpeed;
+	UPROPERTY(EditAnywhere)
+	float AimWalkSpeed;
+
 
 public:
 };
