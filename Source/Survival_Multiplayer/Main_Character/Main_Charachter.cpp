@@ -15,6 +15,7 @@
 #include "Survival_Multiplayer/CharacterComponent/CombatComponent.h"
 #include "Survival_Multiplayer/HUD/OverheadWidget.h"
 #include "Survival_Multiplayer/Weapon/Weapon.h"
+#include "PlayerAnimInstances.h"
 
 
 // Sets default values
@@ -42,8 +43,13 @@ AMain_Character::AMain_Character()
 	GetCharacterMovement() -> NavAgentProps.bCanCrouch = true;
 	GetCapsuleComponent() -> SetCollisionResponseToChannel(ECC_Camera , ECR_Ignore);
 	GetMesh() -> SetCollisionResponseToChannel(ECC_Camera , ECR_Ignore);
+	GetCharacterMovement()-> RotationRate = FRotator(0.f,0.f,850.f);
 
 	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
+	
+	SetNetUpdateFrequency(66.f);
+	SetMinNetUpdateFrequency(33.f);
+	
 	
 }
 
@@ -89,6 +95,8 @@ void AMain_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		Input-> BindAction(CrouchingAction,ETriggerEvent::Triggered,this,&AMain_Character::CrouchButtonPressed);
 		Input-> BindAction(AimAction,ETriggerEvent::Started,this,&AMain_Character::AimButtonPressed);
 		Input-> BindAction(AimAction,ETriggerEvent::Completed,this,&AMain_Character::AimButtonReleased);
+		Input-> BindAction(FireAction,ETriggerEvent::Started,this,&AMain_Character::FireButtonPressed);
+		Input-> BindAction(FireAction,ETriggerEvent::Completed,this,&AMain_Character::FireButtonReleased);
 	}
 }
 
@@ -104,6 +112,51 @@ void AMain_Character::PostInitializeComponents()
 	if (Combat)
 	{
 		Combat->Character = this;
+	}
+}
+
+void AMain_Character::PlayFireMontage(bool bAiming)
+{
+	if (Combat == nullptr  ||Combat-> EquippedWeapon == nullptr)
+	{
+		return;
+	}
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && FireWeaponMontage)
+	{
+		if (Combat->bAiming)
+		{
+			//UE_LOG(LogTemp, Warning, TEXT("Aiming and moving"));
+			float Duration = AnimInstance->Montage_Play(FireWeaponMontage);
+			if (Duration > 0.f)
+			{
+				FName SectionName = bAiming ? FName("RifleAim") : FName("RifleHip");
+				AnimInstance->Montage_JumpToSection(SectionName);
+
+				//UE_LOG(LogTemp, Warning, TEXT("Fire montage played. Section: %s"), *SectionName.ToString());
+			}
+			else
+			{
+				//UE_LOG(LogTemp, Error, TEXT("Montage failed to play."));
+			}
+		}
+		else if (!Combat->bAiming && ShouldUseAimingLocomotion())
+		{
+			//UE_LOG(LogTemp, Error, TEXT("Moving not aiming"));
+			float Duration = AnimInstance->Montage_Play(FireWeaponMontage);
+			if (Duration > 0.f)
+			{
+				FName SectionName = bAiming ? FName("RifleAim") : FName("RifleHip");
+				AnimInstance->Montage_JumpToSection(SectionName);
+
+				//UE_LOG(LogTemp, Warning, TEXT("Fire montage played. Section: %s"), *SectionName.ToString());
+			}
+			else
+			{
+				//UE_LOG(LogTemp, Error, TEXT("Montage failed to play."));
+			}
+		}
+	//
 	}
 }
 
@@ -135,13 +188,20 @@ void AMain_Character::Look(const FInputActionValue& InputValue)
 	{
 		AddControllerYawInput(InputVector.X);
 		AddControllerPitchInput(InputVector.Y);
-		
 	}
+		
 }
 
 void AMain_Character::Jump()
 {
-	ACharacter::Jump();
+	if (bIsCrouched)
+	{
+		UnCrouch();
+	}else
+	{
+	 ACharacter::Jump();
+		
+	}
 }
 
 void AMain_Character::Interact() //server pickup who's owns the server or created
@@ -230,6 +290,23 @@ void AMain_Character::AimOffSet(float DeltaTime)
 
 }
 
+void AMain_Character::FireButtonPressed()
+{
+	if (Combat && Combat->EquippedWeapon)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("FireButtonPressed"));
+		Combat->FireButtonPressed(true);
+	}
+}
+
+void AMain_Character::FireButtonReleased()
+{
+	if (Combat && Combat->EquippedWeapon)
+	{
+		Combat->FireButtonPressed(false);
+	}
+}
+
 void  AMain_Character :: TurnInPlace(float DeltaTime)
 {
 	if (AO_Yaw > 90.f)
@@ -310,6 +387,18 @@ AWeapon* AMain_Character::GetEquippedWeapon()
 		return nullptr;
 	}
 	return  Combat->EquippedWeapon;
+}
+
+bool AMain_Character::ShouldUseAimingLocomotion() const  //using this bacuse of anim animation using in without aimnimations 
+{
+	bool bIsMoving =
+		GetVelocity().Size2D() > 0.f &&
+		GetCharacterMovement() &&
+		!GetCharacterMovement()->IsFalling();
+
+	bool bManualAim = Combat && Combat->bAiming;
+
+	return bManualAim || bIsMoving;
 }
 
 

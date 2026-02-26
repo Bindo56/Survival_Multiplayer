@@ -64,6 +64,26 @@ void UCombatComponent::OnRep_EquippedWeapon()
 	 }
 }
 
+void UCombatComponent::FireButtonPressed(bool bPressed)
+{
+	bFireButtonPrssed = bPressed;
+
+	//UE_LOG(LogTemp, Warning, TEXT("FireButtonPressed called. bPressed: %s"), bPressed ? TEXT("True") : TEXT("False"));
+
+	if (Character) //charchter willl is null when not aiming 
+	{
+	//	UE_LOG(LogTemp, Warning, TEXT("Character is valid. Calling PlayFireMontage."));
+
+		Character->PlayFireMontage(bAiming);
+
+		//UE_LOG(LogTemp, Warning, TEXT("PlayFireMontage executed."));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Character is NULL  Montage will not play."));
+	}
+}
+
 // Called every frame
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
                                      FActorComponentTickFunction* ThisTickFunction)

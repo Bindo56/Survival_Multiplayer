@@ -19,6 +19,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
+	void PlayFireMontage(bool bAiming);
 
 protected:
 	virtual void BeginPlay() override;
@@ -39,15 +40,20 @@ protected:
 	class UInputAction* CrouchingAction;
 	UPROPERTY(EditAnywhere, Category = "EnhancedInput")
 	class UInputAction* AimAction;
+	UPROPERTY(EditAnywhere, Category = "EnhancedInput")
+	class UInputAction* FireAction;
 
 	void Move(const FInputActionValue& InputValue);
 	void Look(const FInputActionValue& InputValue);
-	void Jump();
+	virtual void Jump() override;
 	void Interact();
 	void CrouchButtonPressed();
 	void AimButtonPressed();
 	void AimButtonReleased();
 	void AimOffSet(float DeltaTime);
+	void FireButtonPressed();
+	void FireButtonReleased();
+	
 	
 
 private:
@@ -82,6 +88,9 @@ private:
 
 	ETurningInPlace TurningInPlace;
 	void TurnInPlace(float DeltaTime);
+
+	UPROPERTY(EditAnywhere,Category = Combat)
+	class UAnimMontage* FireWeaponMontage;
 public:
 	//getter and setter
 	 void SetOverLappingWeapon(AWeapon* Weapon);
@@ -92,5 +101,7 @@ public:
 	AWeapon* GetEquippedWeapon();
 
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const {return  TurningInPlace;}
+
+	bool ShouldUseAimingLocomotion() const;
 	
 };
