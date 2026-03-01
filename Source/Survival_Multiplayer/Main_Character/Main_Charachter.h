@@ -75,7 +75,7 @@ private:
 	UFUNCTION()
 	void OnRep_OverlappingWeapon(AWeapon* LastWeapon) const;
 
-	 UPROPERTY(VisibleAnywhere)
+	 UPROPERTY(EditAnywhere)
 	class UCombatComponent* Combat;
 
 	UFUNCTION(Server,Reliable)  //for RPC Call

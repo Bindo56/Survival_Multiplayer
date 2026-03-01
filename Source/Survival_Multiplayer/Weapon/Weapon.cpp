@@ -123,5 +123,23 @@ void AWeapon::ShowPickupWidget(bool bShowWidget) const
 	}
 }
 
+void AWeapon::Fire(const FVector& HitTarget)
+{
+	if (MuzzleFlash == nullptr || WeaponMesh == nullptr)
+	{
+		return;
+	}
+
+	UNiagaraFunctionLibrary::SpawnSystemAttached(  //muzzle
+	MuzzleFlash,
+	WeaponMesh,
+	FName("muzzle_Flash_Socket"),
+	FVector::ZeroVector,
+	FRotator(90.f,0.f,90.f),
+	EAttachLocation::SnapToTarget,
+	true
+	);
+}
+
 
 

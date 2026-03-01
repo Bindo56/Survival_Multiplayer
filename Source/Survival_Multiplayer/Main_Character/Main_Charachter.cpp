@@ -66,7 +66,9 @@ void AMain_Character::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	AimOffSet(DeltaTime);
+	Combat->TickComponent(DeltaTime, LEVELTICK_All, nullptr);
 
+	//UE_LOG(LogTemp, Warning, TEXT("Character Tick"));
 	/*if (OverlappingWeapon)
 	{
 		OverlappingWeapon->ShowPickupWidget(true);
@@ -309,11 +311,11 @@ void AMain_Character::FireButtonReleased()
 
 void  AMain_Character :: TurnInPlace(float DeltaTime)
 {
-	if (AO_Yaw > 90.f)
+	if (AO_Yaw > 50.f)  //turn roatation value
 	{
 		TurningInPlace = ETurningInPlace::ETIP_Right;
 	}
-	else if (AO_Yaw < -90.f)
+	else if (AO_Yaw < -50.f)
 	{
 		TurningInPlace = ETurningInPlace::ETIP_Left;
 	}

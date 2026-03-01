@@ -7,6 +7,8 @@
 #include "CombatComponent.generated.h"
 
 
+#define TRACE_LENGHT 80000.f //const macro
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class SURVIVAL_MULTIPLAYER_API UCombatComponent : public UActorComponent
 {
@@ -32,6 +34,14 @@ protected:
 
 	void FireButtonPressed(bool bPressed);
 
+	UFUNCTION(Server,Reliable)
+	void ServerFire(const FVector_NetQuantize& TraceHitTarget);
+
+	UFUNCTION(NetMulticast , Reliable)
+	void MulticastFire(const FVector_NetQuantize& TraceHitTarget);
+
+	void TraceUnderCrosshairs(FHitResult& TraceHitResult);
+
 private:
 	class AMain_Character* Character;
 	
@@ -47,6 +57,8 @@ private:
 	float AimWalkSpeed;
 
 	bool bFireButtonPrssed;
+
+	FVector HitTarget;
 
 
 public:

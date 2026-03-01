@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "NiagaraSystem.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Weapon.generated.h"
 
 
@@ -29,6 +31,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void ShowPickupWidget(bool bShowWidget) const;
+	virtual void Fire(const FVector& HitTarget);
 
 protected:
 	
@@ -60,6 +63,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
 	class USphereComponent* AreaSphere;
+	
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UNiagaraSystem* MuzzleFlash;
 
 	UPROPERTY(ReplicatedUsing = OnRep_WeaponState , VisibleAnywhere ,Category = "Weapon Properties")
 	EWeaponState WeaponState;
