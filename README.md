@@ -1,13 +1,21 @@
-# Survival_Multiplayer
+# Survival_Shooter_Multiplayer
 
 
-https://github.com/user-attachments/assets/52efb25d-8c11-4b85-a337-c816b62e8a9f
+
+https://github.com/user-attachments/assets/e175283b-68d9-43a4-b466-0d2aaaa7f418
+
 
 Multiplayer Combat Prototype (Work in Progress)
 
 This project is a multiplayer-focused combat prototype built in Unreal Engine. The core focus is on implementing a solid gameplay loop with properly structured networking architecture.
 
 Currently implemented features include:
+
+-  Weapon Rotation to Aim Direction(06 Mar 26)  
+
+-  Added Crosshair (06 Mar 26)
+
+-  Weapon hit FX (06 Mar 26)
 
  - Multiplayer session flow (create, join, seamless travel)
 
