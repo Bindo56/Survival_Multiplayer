@@ -10,6 +10,11 @@
 #include "Survival_Multiplayer/Weapon/Weapon.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
+#include "Camera/CameraComponent.h"
+#include "Survival_Multiplayer/PlayerController/MainPlayerController.h"
+#include "Survival_Multiplayer/HUD/MainCharacterHUD.h"
+#include "Windows/WindowsApplication.h"
+#include "Camera/CameraComponent.h"
 
 
 // Sets default values for this component's properties
@@ -34,6 +39,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 	DOREPLIFETIME(UCombatComponent,EquippedWeapon);
 	DOREPLIFETIME(UCombatComponent,bAiming);
+	DOREPLIFETIME_CONDITION(UCombatComponent, HitTarget, COND_SkipOwner);
 }
 
 
@@ -56,9 +62,144 @@ void UCombatComponent::BeginPlay()
 	if (Character)
 	{
 		Character-> GetCharacterMovement() -> MaxWalkSpeed = BaseWalkSpeed;
+
+		if (Character->GetFollowCamera())
+		{
+			DefaultFOV = Character ->GetFollowCamera()->FieldOfView;
+			CurrentFOV = DefaultFOV;
+		}
 	}
 	
 	// ...
+}
+
+// Called every frame
+void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+									 FActorComponentTickFunction* ThisTickFunction)
+{
+	//UE_LOG(LogTemp, Warning, TEXT("Combat Tick Running"));
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	
+	// ...//comment out this to remove the circle debug 
+	
+	if (Character &&  Character->IsLocallyControlled())
+	{
+	    FHitResult HitResult;
+		TraceUnderCrosshairs(HitResult);
+		HitTarget = HitResult.ImpactPoint;
+
+		SetHUDCrosshairs(DeltaTime);
+		InterpFOV(DeltaTime);
+	}
+	
+	if (Character->GetVelocity().Size2D()> 0.f)
+	{
+     	SetAimmingWhileWalking(true);
+	}else
+	{
+		//SetAiming(false);
+	}
+		
+}
+
+void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
+{
+	
+	if (Character == nullptr || Character->Controller == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Null"));
+		return;
+		
+	}
+
+	Controller = Controller == nullptr ?  Cast<AMainPlayerController>(Character -> Controller) : Controller;	//good way to cast
+	if (Controller)
+	{
+		
+		HUD = HUD == nullptr ? Cast<AMainCharacterHUD>(Controller -> GetHUD()) : HUD;
+		if (HUD)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("HUD got"));
+			FHUDPackage HUDPackage;
+			if (EquippedWeapon)
+			{
+				HUDPackage.CrosshairCenter = EquippedWeapon-> CrosshiarCenter;
+				HUDPackage.CrosshairTop = EquippedWeapon -> CrosshiarTop;
+				HUDPackage.CrosshairBottom = EquippedWeapon -> CrosshiarBottom;
+				HUDPackage.CrosshairLeft = EquippedWeapon -> Crosshiarleft;
+				HUDPackage.CrosshairRight = EquippedWeapon-> Crosshiarright;
+				
+			}else
+			{
+				HUDPackage.CrosshairCenter = nullptr;
+				HUDPackage.CrosshairTop = nullptr;
+				HUDPackage.CrosshairBottom = nullptr;
+				HUDPackage.CrosshairLeft = nullptr;
+				HUDPackage.CrosshairRight = nullptr;
+			}
+			//calculate crosshair spread
+			FVector2D WalkSpeedRange(0.f,Character -> GetCharacterMovement()->MaxWalkSpeed);
+			FVector2D VelocityMulti(0.f,1.f);
+			FVector Velocity = Character -> GetVelocity();
+			Velocity.Z = 0.f;
+			
+		    CrosshairVelocityFactor= FMath::GetMappedRangeValueClamped(WalkSpeedRange,VelocityMulti,Velocity.Size());
+
+			if (Character -> GetCharacterMovement()->IsFalling())
+			{
+				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor , 2.25f , DeltaTime , 2.25f);
+			}else
+			{
+				
+				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor , 0.f , DeltaTime , 30.f);
+			}
+			
+			HUDPackage.CrosshairSpread = CrosshairVelocityFactor + CrosshairInAirFactor; 
+			
+			HUD->SetHUDPackage(HUDPackage);
+		}else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("HUDNull"));
+		}
+	}
+}
+
+void UCombatComponent::SetAimmingWhileWalking(bool isWalking)
+{
+	if (!Character || !EquippedWeapon || !isWalking) return;
+
+	float Speed = Character->GetVelocity().Size2D(); // ignore vertical velocity
+
+	bool bIsWalking = Speed > 0.f;
+
+	bAiming = bIsWalking;
+
+	Character->GetCharacterMovement()->MaxWalkSpeed =
+		bAiming ? AimWalkSpeed : BaseWalkSpeed;
+
+}
+
+void UCombatComponent::InterpFOV(float DeltaTime)
+{
+	if (EquippedWeapon == nullptr)
+	{
+		return;
+	}
+
+	if (bAiming)
+	{
+		CurrentFOV = FMath::FInterpTo(CurrentFOV , EquippedWeapon->GetZoomedFOV(),DeltaTime,EquippedWeapon->GetZoomInterSpeed());
+	}
+	else
+	{
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV , DeltaTime,ZoomInterpSpeed);
+	}
+
+	if (Character && Character ->GetFollowCamera())
+	{
+		Character-> GetFollowCamera() -> SetFieldOfView(CurrentFOV);
+	}
 }
 
 void UCombatComponent::SetAiming(bool bISAiming)
@@ -95,6 +236,10 @@ void UCombatComponent::FireButtonPressed(bool bPressed)
 {
 	bFireButtonPrssed = bPressed;
 
+	if (!bAiming)
+	{
+	   return;
+	}
 	if (bFireButtonPrssed)
 	{
 		FHitResult HitResult;
@@ -162,6 +307,7 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 	
 }
 
+
 void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
 {
 	MulticastFire(TraceHitTarget);
@@ -185,20 +331,6 @@ void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& T
 }
 
 
-
-// Called every frame
-void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
-                                     FActorComponentTickFunction* ThisTickFunction)
-{
-	//UE_LOG(LogTemp, Warning, TEXT("Combat Tick Running"));
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	
-	// ...//comment out this to remove the circle debug 
-	FHitResult HitResult;
-	TraceUnderCrosshairs(HitResult);
-}
-
 void UCombatComponent::EquipWepon(class AWeapon* WeaponToEquip)
 {
 	if (Character == nullptr || WeaponToEquip == nullptr)
@@ -212,6 +344,10 @@ void UCombatComponent::EquipWepon(class AWeapon* WeaponToEquip)
 	if (HandSocket)
 	{
 		HandSocket->AttachActor(EquippedWeapon,Character->GetMesh());
+		if (EquippedWeapon->getWeaponMesh())
+		{
+			EquippedWeapon->getWeaponMesh()->SetRelativeRotation(FRotator(0.f, 0.f, 260.f));
+		}
 	}
 	EquippedWeapon-> SetOwner(Character);
 

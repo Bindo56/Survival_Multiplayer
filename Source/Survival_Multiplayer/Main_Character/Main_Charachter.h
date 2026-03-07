@@ -103,5 +103,8 @@ public:
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const {return  TurningInPlace;}
 
 	bool ShouldUseAimingLocomotion() const;
+	FVector GetHitTarget() const;
+
+	FORCEINLINE  UCameraComponent* GetFollowCamera() const {return FollowCamera;}
 	
 };

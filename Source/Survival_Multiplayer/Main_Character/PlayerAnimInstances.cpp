@@ -67,8 +67,50 @@ void UPlayerAnimInstances::NativeUpdateAnimation(float DeltaSeconds)
 		Main_Character-> GetMesh()-> TransformToBoneSpace(FName("LeftHand"),LeftHandTransform.GetLocation(),FRotator::ZeroRotator,OutPosition,OutRotation);
 		LeftHandTransform.SetLocation(OutPosition);
 		LeftHandTransform.SetRotation(FQuat(OutRotation));
+
 		
 
+		WeaponPos_Implementation();
+
+		//if (Main_Character-> IsLocallyControlled())
+		/*{
+			//isLocallyControlled = true;
+			FTransform RightHandTransform = EquippedWeapon-> getWeaponMesh()-> GetSocketTransform(FName("RightHand"),RTS_World);
+			FRotator LookRot = UKismetMathLibrary::FindLookAtRotation( RightHandTransform.GetLocation(),Main_Character->GetHitTarget());
+
+			LookRot.Yaw += 90.f;
+			RightHandRotation = LookRot;
+		}*/
+		
+		//RightHandRotation = FRotator(LookRot.Pitch, LookRot.Yaw, 0.f);
+
+		/*FTransform MuzzleTipTransform = EquippedWeapon-> getWeaponMesh() -> GetSocketTransform(FName("muzzle_Flash_Socket"),RTS_World);
+		FVector MuzzleX(FRotationMatrix(MuzzleTipTransform.GetRotation().Rotator()).GetUnitAxis(EAxis::X));*/
+		//DrawDebugLine(GetWorld(),MuzzleTipTransform.GetLocation(),MuzzleTipTransform.GetLocation() + MuzzleX * 1000.f ,FColor::Red);
+
+		//DrawDebugLine(GetWorld(),MuzzleTipTransform.GetLocation() ,Main_Character->GetHitTarget(),FColor::Orange);
+		
 	}
 	
+}
+
+void UPlayerAnimInstances::WeaponPos_Implementation()
+{
+	if (Main_Character == nullptr || EquippedWeapon == nullptr) return;
+	if (EquippedWeapon->getWeaponMesh() == nullptr) return;
+
+	FTransform RightHandTransform = EquippedWeapon-> getWeaponMesh()-> GetSocketTransform(FName("RightHand"),RTS_World);
+	
+	FVector Target = Main_Character->GetHitTarget();
+	// Fallback: If HitTarget is zero (not synced yet), use the character's aim rotation
+	if (Target.IsZero())
+	{
+		const FVector Start = Main_Character->GetActorLocation() + FVector(0.f, 0.f, 60.f); // Approx Eye Height
+		Target = Start + Main_Character->GetBaseAimRotation().Vector() * 5000.f;
+	}
+	
+	FRotator LookRot = UKismetMathLibrary::FindLookAtRotation( RightHandTransform.GetLocation(), Target);
+
+	LookRot.Yaw += 90.f;
+	RightHandRotation = LookRot;
 }

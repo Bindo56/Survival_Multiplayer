@@ -403,5 +403,14 @@ bool AMain_Character::ShouldUseAimingLocomotion() const  //using this bacuse of 
 	return bManualAim || bIsMoving;
 }
 
+FVector AMain_Character::GetHitTarget() const
+{
+	if (Combat == nullptr)
+	{
+		return FVector();
+	}	 
+	return Combat->HitTarget;
+}
+
 
 

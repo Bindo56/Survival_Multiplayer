@@ -42,8 +42,12 @@ protected:
 
 	void TraceUnderCrosshairs(FHitResult& TraceHitResult);
 
+	void SetHUDCrosshairs(float DeltaTime);
+
 private:
 	class AMain_Character* Character;
+	class AMainPlayerController* Controller;
+	class AMainCharacterHUD* HUD;
 	
 	UPROPERTY(Replicatedusing = OnRep_EquippedWeapon)
 	class AWeapon* EquippedWeapon;
@@ -58,8 +62,32 @@ private:
 
 	bool bFireButtonPrssed;
 
+	UPROPERTY(Replicated)
 	FVector HitTarget;
+	
+	void SetAimmingWhileWalking(bool isWalking);
 
 
+	//HUD&Crosshair
+	 
+    float CrosshairVelocityFactor;
+    float CrosshairInAirFactor;
+
+	/*
+	 * Aiming And FOV
+	 */
+
+	float DefaultFOV;
+
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float ZoomedFOV = 30.f;
+
+	float CurrentFOV;
+
+	UPROPERTY(EditAnywhere , Category = "Combat")
+	float ZoomInterpSpeed = 20.f;
+
+
+	void InterpFOV(float DeltaTime);
 public:
 };

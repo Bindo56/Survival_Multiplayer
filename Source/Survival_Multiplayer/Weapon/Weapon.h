@@ -33,6 +33,30 @@ public:
 	void ShowPickupWidget(bool bShowWidget) const;
 	virtual void Fire(const FVector& HitTarget);
 
+	//Texture for weapon Crosshair
+
+
+	UPROPERTY(EditAnywhere,Category = Crosshair)
+	class  UTexture2D* CrosshiarCenter;
+	UPROPERTY(EditAnywhere,Category = Crosshair)
+	class  UTexture2D* Crosshiarleft;
+	UPROPERTY(EditAnywhere,Category = Crosshair)
+	class  UTexture2D* Crosshiarright;
+	UPROPERTY(EditAnywhere,Category = Crosshair)
+	class  UTexture2D* CrosshiarTop;
+	UPROPERTY(EditAnywhere,Category = Crosshair)
+	class  UTexture2D* CrosshiarBottom;
+
+	/*
+	 * Zoomed FOV while Aiming
+	 */
+
+	UPROPERTY(EditAnywhere)
+	float ZoomedFOV = 30.f;
+
+	UPROPERTY(EditAnywhere)
+	float ZoomInterpSpeed = 20.f;
+	
 protected:
 	
 	virtual void BeginPlay() override;
@@ -86,4 +110,7 @@ public:
 	}
 
 	FORCEINLINE USkeletalMeshComponent* getWeaponMesh() const {return  WeaponMesh;}
+
+	FORCEINLINE float GetZoomedFOV() const { return ZoomedFOV;}
+	FORCEINLINE float GetZoomInterSpeed() const { return ZoomInterpSpeed;}
 };

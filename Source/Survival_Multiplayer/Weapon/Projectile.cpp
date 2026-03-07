@@ -89,10 +89,10 @@ void AProjectile::MulticastImpactFX_Implementation(FVector_NetQuantize Location,
 		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, Location);
 	}
 
-	/*if (ProjectileMovement) ProjectileMovement->StopMovementImmediately();
+	if (ProjectileMovement) ProjectileMovement->StopMovementImmediately();
 	SetActorEnableCollision(false);
 	if (TracerComponent) TracerComponent->Destroy();
-	SetActorHiddenInGame(true);*/
+	SetActorHiddenInGame(true);
 }
 
 /*void AProjectile::Destroyed()
