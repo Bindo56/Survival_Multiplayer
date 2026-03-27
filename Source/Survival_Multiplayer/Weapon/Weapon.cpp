@@ -67,7 +67,7 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AWeapon,WeaponState);  //Add #include "Net/UnrealNetwork.h" for network auth
+	DOREPLIFETIME(AWeapon,WeaponState);
 }
 
 void AWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -94,10 +94,10 @@ void AWeapon::Server_StartReload_Implementation()
 {
 	//if (bIsReloading) return;
 	bIsReloading = true;
-	UE_LOG(LogTemp, Warning, TEXT("WeaponScript _ StartReload Called"));
+	//UE_LOG(LogTemp, Warning, TEXT("WeaponScript _ StartReload Called"));
 
 	if (!MagazineClass) return;
-	UE_LOG(LogTemp, Warning, TEXT("Magazine Class Loadeed"));
+	//UE_LOG(LogTemp, Warning, TEXT("Magazine Class Loadeed"));
 
 	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -121,7 +121,7 @@ void AWeapon::Server_StartReload_Implementation()
 
 	if (CurrentMagazine && WeaponMesh)
 	{
-	    UE_LOG(LogTemp, Warning, TEXT("WeaponScript _ StartReload and attacted "));
+	    //UE_LOG(LogTemp, Warning, TEXT("WeaponScript _ StartReload and attacted "));
 		CurrentMagazine->AttachToComponent(
 	     WeaponMesh,
 	     FAttachmentTransformRules::SnapToTargetNotIncludingScale,
@@ -133,7 +133,7 @@ void AWeapon::Server_RemoveMagazine_Implementation(const FVector& Impulse)
 {
 	if (!CurrentMagazine) return;
 
-	UE_LOG(LogTemp, Warning, TEXT("Server_RemoveMagazine"));
+	//UE_LOG(LogTemp, Warning, TEXT("Server_RemoveMagazine"));
 
 	Multicast_EnableMagazinePhysics(CurrentMagazine, Impulse);
 
@@ -147,7 +147,6 @@ void AWeapon::Multicast_EnableMagazinePhysics_Implementation(AMagazine* Mag, con
 
 	if (Impulse.IsNearlyZero())
 	{
-		// Just detach + physics (no force)
 		CurrentMagazine->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		CurrentMagazine->EnablePhysics(FVector::ZeroVector);
 		return;

@@ -310,8 +310,7 @@ void AMain_Character::Server_TryOpenDoor_Implementation(ADoor* Door)
 
 	float Distance = FVector::Dist(GetActorLocation(), Door->GetActorLocation());
 	if (Distance > 200.f) return;
-
-	// Call normal function on door (NOT RPC)
+	
 	Door->OpenDoor(this);
 }
 

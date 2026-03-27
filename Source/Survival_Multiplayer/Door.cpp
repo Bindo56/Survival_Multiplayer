@@ -41,7 +41,7 @@ void ADoor::BeginPlay()
 
 void ADoor::Multicast_OpenDoor_Implementation(float Direction)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Multicast called For Door"));
+	//UE_LOG(LogTemp, Warning, TEXT("Multicast called For Door"));
 	
 	if (bIsOpen) return;
 
@@ -74,14 +74,13 @@ void ADoor::OpenDoor(AMain_Character* Player)
 
 void ADoor::Multicast_CloseDoor_Implementation(float Direction)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Multicast Close Door"));
+	//UE_LOG(LogTemp, Warning, TEXT("Multicast Close Door"));
 
 	if (!bIsOpen) return;
 
 	bIsOpen = false;
 
 	TargetRotation = ClosedRotation + FRotator(0.f, Direction * 0, 0.f);
-	// Go back to original rotation
 	DoorMesh->SetRelativeRotation(TargetRotation);
 }
 

@@ -20,18 +20,15 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	// 🔲 Trigger Zone
 	UPROPERTY(VisibleAnywhere)
 	UBoxComponent* CollisionBox;
-
-	//  Buff Settings
+	
 	UPROPERTY(EditAnywhere, Category = "Buff")
 	float SpeedMultiplier = 2.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Buff")
 	float BuffDuration = 10.0f;
-
-	// 🔁 Overlap Functions
+	
 	UFUNCTION()
 	void OnOverlapBegin(
 		UPrimitiveComponent* OverlappedComponent,
@@ -49,8 +46,7 @@ protected:
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex
 	);
-
-	// Buff logic
+	
 	void ApplySpeedBuff(class AMain_Character* Player);
 	void ResetSpeed(class AMain_Character* Player);
 
