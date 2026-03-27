@@ -16,6 +16,7 @@
 #include "Survival_Multiplayer/HUD/OverheadWidget.h"
 #include "Survival_Multiplayer/Weapon/Weapon.h"
 #include "PlayerAnimInstances.h"
+#include "Survival_Multiplayer/Door.h"
 
 
 // Sets default values
@@ -68,6 +69,56 @@ void AMain_Character::Tick(float DeltaTime)
 	AimOffSet(DeltaTime);
 	Combat->TickComponent(DeltaTime, LEVELTICK_All, nullptr);
 
+	if (bHoldingMag)
+	{
+		float DeltaX = 0.f;
+		float DeltaY = 0.f;
+
+		APlayerController* PC = Cast<APlayerController>(Controller);
+		if (PC)
+		{
+			PC->GetInputMouseDelta(DeltaX, DeltaY);
+		}
+
+		AccumulatedMouseDelta += FVector2D(DeltaX, DeltaY);
+		AccumulatedMouseDelta = AccumulatedMouseDelta.GetClampedToMaxSize(150.f);
+
+		float Strength = AccumulatedMouseDelta.Size();
+
+		// KEY FIX: threshold
+		if (Strength < 20.f)
+		{
+			Impluse = FVector::ZeroVector; // just drop
+			return;
+		}
+
+		// Direction
+		FVector2D InputDir2D = AccumulatedMouseDelta.GetSafeNormal();
+		FVector ThrowDir = FVector(InputDir2D.X, 0.f, -InputDir2D.Y).GetSafeNormal();
+
+		// Strength scaling
+		float Normalized = Strength / 150.f;
+		float Force = FMath::Lerp(300.f, 1200.f, Normalized);
+
+		Impluse = ThrowDir * Force;
+		UE_LOG(LogTemp, Warning, TEXT("Impulse: %s"), *Impluse.ToString());
+	}
+
+	
+	/*if (bHoldingMag)
+	{
+		float DeltaX = 0.f;
+		float DeltaY = 0.f;
+		APlayerController* PC = Cast<APlayerController>(Controller);
+
+		if (PC)
+		{
+			PC->GetInputMouseDelta(DeltaX, DeltaY);
+			UE_LOG(LogTemp, Warning, TEXT("Mouse Delta X: %f Y: %f"), DeltaX, DeltaY);
+		}
+		AccumulatedMouseDelta += FVector2D(DeltaX, DeltaY);
+	}*/
+
 	//UE_LOG(LogTemp, Warning, TEXT("Character Tick"));
 	/*if (OverlappingWeapon)
 	{
@@ -99,6 +150,8 @@ void AMain_Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		Input-> BindAction(AimAction,ETriggerEvent::Completed,this,&AMain_Character::AimButtonReleased);
 		Input-> BindAction(FireAction,ETriggerEvent::Started,this,&AMain_Character::FireButtonPressed);
 		Input-> BindAction(FireAction,ETriggerEvent::Completed,this,&AMain_Character::FireButtonReleased);
+		Input->BindAction(GrabMagAction, ETriggerEvent::Started, this, &AMain_Character::OnGrabPressed);
+		Input->BindAction(GrabMagAction, ETriggerEvent::Completed, this, &AMain_Character::OnGrabReleased);
 	}
 }
 
@@ -106,6 +159,7 @@ void AMain_Character::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME_CONDITION(AMain_Character,OverlappingWeapon,COND_OwnerOnly);
+	DOREPLIFETIME(AMain_Character, CurrentBuffTime);
 }
 
 void AMain_Character::PostInitializeComponents()
@@ -181,6 +235,11 @@ void AMain_Character::Move(const FInputActionValue& InputValue)
 		AddMovementInput(ForwardDirection, InputVector.Y);
 		AddMovementInput(RightDirection, InputVector.X);
 	}
+	if (Combat)
+	{
+		const bool bIsMoving = !InputVector.IsNearlyZero();
+		Combat->SetAimmingWhileWalking(bIsMoving);
+	}
 }
 
 void AMain_Character::Look(const FInputActionValue& InputValue)
@@ -208,6 +267,30 @@ void AMain_Character::Jump()
 
 void AMain_Character::Interact() //server pickup who's owns the server or created
 {
+	if (Combat == nullptr)
+	{
+		return;
+	}
+	FHitResult Hit;
+	Combat->TraceUnderCrosshairs(Hit);
+	//UE_LOG(LogTemp, Warning, TEXT("Door Detected"));
+	ADoor* Door = Cast<ADoor>(Hit.GetActor());
+	
+	if (Door)
+	{
+		if (!HasAuthority())
+		{
+		  Server_TryOpenDoor(Door);
+		}else
+		{
+			Server_TryOpenDoor(Door);
+		}
+			
+		return;
+	}
+
+
+	
 	if (Combat)
 	{
 		if (HasAuthority())
@@ -219,6 +302,17 @@ void AMain_Character::Interact() //server pickup who's owns the server or create
 			ServerEquipButtonPressed();
 		}
 	}
+}
+
+void AMain_Character::Server_TryOpenDoor_Implementation(ADoor* Door)
+{
+	if (!Door) return;
+
+	float Distance = FVector::Dist(GetActorLocation(), Door->GetActorLocation());
+	if (Distance > 200.f) return;
+
+	// Call normal function on door (NOT RPC)
+	Door->OpenDoor(this);
 }
 
 void AMain_Character::CrouchButtonPressed()
@@ -296,7 +390,7 @@ void AMain_Character::FireButtonPressed()
 {
 	if (Combat && Combat->EquippedWeapon)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("FireButtonPressed"));
+		//UE_LOG(LogTemp, Warning, TEXT("FireButtonPressed"));
 		Combat->FireButtonPressed(true);
 	}
 }
@@ -306,6 +400,69 @@ void AMain_Character::FireButtonReleased()
 	if (Combat && Combat->EquippedWeapon)
 	{
 		Combat->FireButtonPressed(false);
+	}
+}
+
+void AMain_Character::OnGrabPressed()
+{
+	bHoldingMag = true;
+	AccumulatedMouseDelta = FVector2D::ZeroVector;
+
+	AWeapon* Weapon = GetEquippedWeapon();
+	//UE_LOG(LogTemp, Warning, TEXT("Grab Pressed"));
+	if (Weapon)
+	{
+		Weapon->Server_StartReload(); // spawn + attach
+	}
+	
+}
+
+void AMain_Character::OnGrabReleased()
+{
+	bHoldingMag = false;
+
+	AWeapon* Weapon = GetEquippedWeapon();
+	//UE_LOG(LogTemp, Warning, TEXT("Grab Released"));
+	if (Weapon)
+	{
+		FVector Dir = FVector(
+			AccumulatedMouseDelta.X,
+			0.f,
+			-AccumulatedMouseDelta.Y
+		).GetSafeNormal();
+
+		
+		//UE_LOG(LogTemp, Warning, TEXT("Released Impluse :  "),Impluse);
+		Weapon->Server_RemoveMagazine(Impluse);
+	}
+}
+
+void AMain_Character::UpdateBuffUI()
+{
+	if (OverheadWidget) 
+	{
+		UOverheadWidget* Widget = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject());
+		//UE_LOG(LogTemp, Warning, TEXT("BufferTime :  "),CurrentBuffTime);
+		Widget->SetBuffTimer(CurrentBuffTime);
+	}
+}
+
+void AMain_Character::OnRep_BuffTime()
+{
+	UpdateBuffUI();
+}
+
+void AMain_Character::Client_UpdateBuffUI_Implementation(float TimeRemaining)
+{
+	if (OverheadWidget)
+	{
+		UOverheadWidget* Widget =
+			Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject());
+
+		if (Widget)
+		{
+			Widget->SetBuffTimer(TimeRemaining);
+		}
 	}
 }
 

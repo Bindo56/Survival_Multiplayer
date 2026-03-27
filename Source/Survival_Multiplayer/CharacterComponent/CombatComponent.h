@@ -26,8 +26,8 @@ protected:
 	virtual void BeginPlay() override;
 	void SetAiming(bool bISAiming);
 
-	UFUNCTION(Server , Reliable)
-	void ServerSetAiming(bool bISAiming);
+	/*UFUNCTION(Server , Reliable)
+	void ServerSetAiming(bool bISAiming);*/
 
 	UFUNCTION()
 	void OnRep_EquippedWeapon();
@@ -49,8 +49,11 @@ private:
 	class AMainPlayerController* Controller;
 	class AMainCharacterHUD* HUD;
 	
-	UPROPERTY(Replicatedusing = OnRep_EquippedWeapon)
+	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)
 	class AWeapon* EquippedWeapon;
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetAimingFromMovement(bool bNewAiming);
 	
 	UPROPERTY(Replicated)
 	bool bAiming;
@@ -65,13 +68,16 @@ private:
 	UPROPERTY(Replicated)
 	FVector HitTarget;
 	
-	void SetAimmingWhileWalking(bool isWalking);
+	
 
+	
 
 	//HUD&Crosshair
 	 
     float CrosshairVelocityFactor;
     float CrosshairInAirFactor;
+	float CrosshairAimFactor;
+	float CrossShootingFactor;
 
 	/*
 	 * Aiming And FOV
@@ -90,4 +96,5 @@ private:
 
 	void InterpFOV(float DeltaTime);
 public:
+	void SetAimmingWhileWalking(bool isWalking);
 };

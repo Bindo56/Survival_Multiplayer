@@ -37,6 +37,19 @@ void UOverheadWidget::ShowPlayerNetRole(APawn* InPawn)
 	SetDisplayText(LocalRoleString);
 }
 
+void UOverheadWidget::SetBuffTimer(float TimeRemaining)
+{
+	if (BuffText)
+	{
+		FString TimerText = FString::Printf(TEXT("Speed Buff: %.1f"), TimeRemaining);
+		BuffText->SetText(FText::FromString(TimerText));
+	}
+	if (TimeRemaining == 0)
+	{
+		BuffText->SetText(FText::GetEmpty());
+	}
+}
+
 void UOverheadWidget::NativeDestruct()
 {
 	Super::NativeDestruct();

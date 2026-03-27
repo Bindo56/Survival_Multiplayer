@@ -42,6 +42,8 @@ protected:
 	class UInputAction* AimAction;
 	UPROPERTY(EditAnywhere, Category = "EnhancedInput")
 	class UInputAction* FireAction;
+	UPROPERTY(EditAnywhere, Category = "EnhancedInput")
+	class UInputAction* GrabMagAction;
 
 	void Move(const FInputActionValue& InputValue);
 	void Look(const FInputActionValue& InputValue);
@@ -53,6 +55,8 @@ protected:
 	void AimOffSet(float DeltaTime);
 	void FireButtonPressed();
 	void FireButtonReleased();
+	void OnGrabPressed();
+	void OnGrabReleased();
 	
 	
 
@@ -65,6 +69,11 @@ private:
 
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OverheadWidget;
+
+	//Door
+	UFUNCTION(Server, Reliable)
+	void Server_TryOpenDoor(class ADoor* Door);
+	//
 
 	/**
 	 * 
@@ -85,6 +94,26 @@ private:
 	float InterpAO_Yaw;
 	float AO_Pitch;
 	FRotator StartingAimRotation;
+	FVector Impluse;
+
+	//SpeedUp
+public:
+	FTimerHandle BuffTimerHandle;
+	UPROPERTY(ReplicatedUsing = OnRep_BuffTime)
+	float CurrentBuffTime = 0.f;
+	void UpdateBuffUI();
+
+	UFUNCTION()
+	void OnRep_BuffTime();
+	
+	UFUNCTION(Client, Reliable)
+	void Client_UpdateBuffUI(float TimeRemaining);
+
+	//
+
+	//MagazineMech
+	bool bHoldingMag = false;
+	FVector2D AccumulatedMouseDelta;
 
 	ETurningInPlace TurningInPlace;
 	void TurnInPlace(float DeltaTime);

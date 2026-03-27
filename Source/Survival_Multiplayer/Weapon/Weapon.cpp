@@ -2,8 +2,7 @@
 
 
 #include "Weapon.h"
-
-#include "VectorUtil.h"
+#include "Magazine.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Net/UnrealNetwork.h"
@@ -90,6 +89,74 @@ void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 		Character -> SetOverLappingWeapon(nullptr);
 	}
 }
+
+void AWeapon::Server_StartReload_Implementation()
+{
+	//if (bIsReloading) return;
+	bIsReloading = true;
+	UE_LOG(LogTemp, Warning, TEXT("WeaponScript _ StartReload Called"));
+
+	if (!MagazineClass) return;
+	UE_LOG(LogTemp, Warning, TEXT("Magazine Class Loadeed"));
+
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	FTransform SocketTransform = WeaponMesh->GetSocketTransform(FName("MagazineSocket"));
+	CurrentMagazine =GetWorld()->SpawnActor<AMagazine>(
+	MagazineClass,
+	SocketTransform.GetLocation(),
+	SocketTransform.GetRotation().Rotator(),
+	Params);
+	/*if (CurrentMagazine)
+	{
+		CurrentMagazine->SetActorScale3D(FVector(100.0f)); // or your desired scale
+	}*/
+	
+	if (CurrentMagazine == nullptr)
+	{
+	  UE_LOG(LogTemp, Warning, TEXT("magzine Not Spawn"));
+		
+	}
+
+	if (CurrentMagazine && WeaponMesh)
+	{
+	    UE_LOG(LogTemp, Warning, TEXT("WeaponScript _ StartReload and attacted "));
+		CurrentMagazine->AttachToComponent(
+	     WeaponMesh,
+	     FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+	     FName("MagazineSocket"));
+	}
+}
+
+void AWeapon::Server_RemoveMagazine_Implementation(const FVector& Impulse)
+{
+	if (!CurrentMagazine) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("Server_RemoveMagazine"));
+
+	Multicast_EnableMagazinePhysics(CurrentMagazine, Impulse);
+
+	CurrentMagazine = nullptr;
+	bIsReloading = false;
+}
+
+void AWeapon::Multicast_EnableMagazinePhysics_Implementation(AMagazine* Mag, const FVector& Impulse)
+{
+	if (!Mag) return;
+
+	if (Impulse.IsNearlyZero())
+	{
+		// Just detach + physics (no force)
+		CurrentMagazine->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		CurrentMagazine->EnablePhysics(FVector::ZeroVector);
+		return;
+	}
+
+	Mag->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	Mag->EnablePhysics(Impulse);
+}
+
 
 void AWeapon::SetWeaponState(EWeaponState State)
 {

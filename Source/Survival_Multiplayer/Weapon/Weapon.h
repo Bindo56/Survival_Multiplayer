@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "NiagaraSystem.h"
+#include "Magazine.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Weapon.generated.h"
 
@@ -56,6 +57,12 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	float ZoomInterpSpeed = 20.f;
+
+	UPROPERTY(EditAnywhere, Category = "Magazine")
+	TSubclassOf<AMagazine> MagazineClass;
+
+	UPROPERTY(Replicated)
+	AMagazine* CurrentMagazine;
 	
 protected:
 	
@@ -79,6 +86,11 @@ protected:
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex
 		);
+
+
+	bool bIsReloading = false;
+	
+	
 	
 
 private:
@@ -113,4 +125,16 @@ public:
 
 	FORCEINLINE float GetZoomedFOV() const { return ZoomedFOV;}
 	FORCEINLINE float GetZoomInterSpeed() const { return ZoomInterpSpeed;}
+
+	UFUNCTION(Server, Reliable)
+	void Server_StartReload();
+
+	UFUNCTION(Server, Reliable)
+	void Server_RemoveMagazine(const FVector& Impulse);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_EnableMagazinePhysics(AMagazine* Mag, const FVector& Impulse);
+
+	
 };
+

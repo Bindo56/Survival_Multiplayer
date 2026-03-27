@@ -120,7 +120,7 @@ void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 		HUD = HUD == nullptr ? Cast<AMainCharacterHUD>(Controller -> GetHUD()) : HUD;
 		if (HUD)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("HUD got"));
+			//UE_LOG(LogTemp, Warning, TEXT("HUD got"));
 			FHUDPackage HUDPackage;
 			if (EquippedWeapon)
 			{
@@ -154,9 +154,19 @@ void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 				
 				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor , 0.f , DeltaTime , 30.f);
 			}
+			if (bAiming)
+			{
+				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor , 0.58f , DeltaTime , 30.f);
+			}
+			else
+			{
+				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor , 0.f , DeltaTime , 30.f);
+			}
+
+			CrossShootingFactor =FMath::FInterpTo(CrossShootingFactor , 0.f , DeltaTime , 30.f);
 			
-			HUDPackage.CrosshairSpread = CrosshairVelocityFactor + CrosshairInAirFactor; 
-			
+			HUDPackage.CrosshairSpread = 0.5f + CrosshairVelocityFactor + CrosshairInAirFactor - CrosshairAimFactor +  CrossShootingFactor; 
+			//UE_LOG(LogTemp, Warning, TEXT("CrosshairSpread: %f"), HUDPackage.CrosshairSpread);
 			HUD->SetHUDPackage(HUDPackage);
 		}else
 		{
@@ -165,9 +175,23 @@ void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 	}
 }
 
+void UCombatComponent::Server_SetAimingFromMovement_Implementation(bool bNewAiming)
+{
+	bAiming = bNewAiming;
+}
+
 void UCombatComponent::SetAimmingWhileWalking(bool isWalking)
 {
-	if (!Character || !EquippedWeapon || !isWalking) return;
+
+	bAiming = isWalking;
+
+	if (Character && Character->IsLocallyControlled())
+	{
+		Server_SetAimingFromMovement(isWalking);
+	}
+	
+	
+	/*if (!Character || !EquippedWeapon || !isWalking) return;
 
 	float Speed = Character->GetVelocity().Size2D(); // ignore vertical velocity
 
@@ -178,6 +202,16 @@ void UCombatComponent::SetAimmingWhileWalking(bool isWalking)
 	Character->GetCharacterMovement()->MaxWalkSpeed =
 		bAiming ? AimWalkSpeed : BaseWalkSpeed;
 
+	if (Character && Character->IsLocallyControlled())
+	{
+		//const float Speed = Character->GetVelocity().Size2D();
+		const bool bShouldAim = Speed > 0.f;
+
+		bAiming = bShouldAim;
+		Server_SetAimingFromMovement(bShouldAim);
+		
+	}*/
+	
 }
 
 void UCombatComponent::InterpFOV(float DeltaTime)
@@ -205,7 +239,8 @@ void UCombatComponent::InterpFOV(float DeltaTime)
 void UCombatComponent::SetAiming(bool bISAiming)
 {
 	bAiming = bISAiming;
-	ServerSetAiming(bISAiming);
+	SetAimmingWhileWalking(bISAiming);
+//	ServerSetAiming(bISAiming);
 	if (Character)
 	{
 		Character -> GetCharacterMovement()-> MaxWalkSpeed = bISAiming ? AimWalkSpeed : BaseWalkSpeed;
@@ -213,6 +248,7 @@ void UCombatComponent::SetAiming(bool bISAiming)
 	
 }
 
+/*
 void UCombatComponent::ServerSetAiming_Implementation(bool bISAiming)
 {
 	bAiming = bISAiming;
@@ -222,6 +258,7 @@ void UCombatComponent::ServerSetAiming_Implementation(bool bISAiming)
 		Character -> GetCharacterMovement()-> MaxWalkSpeed = bISAiming ? AimWalkSpeed : BaseWalkSpeed;
 	}
 }
+*/
 
 void UCombatComponent::OnRep_EquippedWeapon()
 {
@@ -245,7 +282,14 @@ void UCombatComponent::FireButtonPressed(bool bPressed)
 		FHitResult HitResult;
 		TraceUnderCrosshairs(HitResult); //get the hit result
 		ServerFire(HitResult.ImpactPoint);
+		if (EquippedWeapon)
+		{
+			CrossShootingFactor  = 1.f;
+		}
 	}
+
+	
+		
 	
 }
 

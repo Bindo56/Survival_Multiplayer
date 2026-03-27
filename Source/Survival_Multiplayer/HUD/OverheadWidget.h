@@ -17,10 +17,15 @@ class SURVIVAL_MULTIPLAYER_API UOverheadWidget : public UUserWidget
 public:
 	UPROPERTY(meta = (BindWidget))
 	class UTextBlock* DisplayText;
+	UPROPERTY(meta = (BindWidget))
+	class UTextBlock* BuffText;
 
 	void SetDisplayText(FString TextToDisplay);
 	UFUNCTION(BlueprintCallable)
 	void ShowPlayerNetRole(APawn* InPawn);
+	
+public:
+	void SetBuffTimer(float TimeRemaining);
 
 protected:
 	virtual void NativeDestruct() override;
