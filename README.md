@@ -1,5 +1,7 @@
 # Survival_Shooter_Multiplayer
 
+[Setup guide](SETUP.md)
+
 
 
 https://github.com/user-attachments/assets/e175283b-68d9-43a4-b466-0d2aaaa7f418
